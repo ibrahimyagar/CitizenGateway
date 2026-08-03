@@ -1,3 +1,4 @@
+using CitizenGateway.Application;
 using CitizenGateway.Infrastructure;
 using CitizenGateway.Infrastructure.Persistence;
 
@@ -6,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Application: use case servisleri (Summary, Request, Auth, Audit, AccessGuard).
+builder.Services.AddApplication();
 
 // Infrastructure: EF Core (Npgsql) + repository'ler + Polly'li HttpClient adapter'ları.
 // Provider değiştirmek kolay: Infrastructure/DependencyInjection.cs içinde

@@ -3,6 +3,7 @@ using CitizenGateway.Application.Options;
 using CitizenGateway.Infrastructure.Http;
 using CitizenGateway.Infrastructure.Persistence;
 using CitizenGateway.Infrastructure.Persistence.Repositories;
+using CitizenGateway.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IExternalServiceClient, ExternalServiceClient>();
+        services.AddSingleton<IPasswordVerifier, IdentityPasswordVerifier>();
 
         // Named HttpClient + Polly: her mock servis bağımsız circuit breaker state tutar.
         AddResilientClient(services, ExternalServiceClient.SporTesisiClientName, mockOptions.SporTesisiBaseUrl);
