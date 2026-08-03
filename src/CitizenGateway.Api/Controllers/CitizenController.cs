@@ -1,4 +1,5 @@
 using CitizenGateway.Api.Auth;
+using CitizenGateway.Api.Filters;
 using CitizenGateway.Application.DTOs;
 using CitizenGateway.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,9 +10,11 @@ namespace CitizenGateway.Api.Controllers;
 /// <summary>
 /// Vatandaş özet ve talep uçları.
 /// Yetki: Personel herkes; Vatandas yalnızca kendi TC'si (CitizenAccessGuard).
+/// AuditCitizenAccess: her summary/requests çağrısı AuditLogEntry üretir.
 /// </summary>
 [ApiController]
 [Authorize]
+[AuditCitizenAccess]
 [Route("api/citizen")]
 public sealed class CitizenController : ControllerBase
 {
