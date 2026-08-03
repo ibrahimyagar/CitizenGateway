@@ -1,0 +1,12 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/TestResults
+**/out
+**/publish
+**/*.user
+**/node_modules
+README.md
+docker-compose*.yml
+**/wwwroot/lib/**/*.map

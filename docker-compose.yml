@@ -1,0 +1,100 @@
+# Örnekköy CitizenGateway — tüm stack tek komutla:
+#   docker compose up --build
+#
+# SENTETİK DEMO: Gerçek kişi verisi / gerçek belediye bağlantısı YOKTUR.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cg-postgres
+    environment:
+      POSTGRES_DB: citizen_gateway
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Host 5433: lokal PostgreSQL 5432 ile çakışmasın.
+      - "5433:5432"
+    volumes:
+      - cg_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d citizen_gateway"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  sportesisi:
+    build:
+      context: .
+      dockerfile: src/MockServices/SporTesisi.Api/Dockerfile
+    container_name: cg-sportesisi
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5101:8080"
+
+  kutuphane:
+    build:
+      context: .
+      dockerfile: src/MockServices/Kutuphane.Api/Dockerfile
+    container_name: cg-kutuphane
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5102:8080"
+
+  cozummerkezi:
+    build:
+      context: .
+      dockerfile: src/MockServices/CozumMerkezi.Api/Dockerfile
+    container_name: cg-cozummerkezi
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5103:8080"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/CitizenGateway.Api/Dockerfile
+    container_name: cg-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sportesisi:
+        condition: service_started
+      kutuphane:
+        condition: service_started
+      cozummerkezi:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Container network hostname'leri — lokal localhost değil.
+      ConnectionStrings__GatewayDb: Host=postgres;Port=5432;Database=citizen_gateway;Username=postgres;Password=postgres
+      MockServices__SporTesisiBaseUrl: http://sportesisi:8080
+      MockServices__KutuphaneBaseUrl: http://kutuphane:8080
+      MockServices__CozumMerkeziBaseUrl: http://cozummerkezi:8080
+      Jwt__Issuer: CitizenGateway
+      Jwt__Audience: CitizenGateway.Clients
+      Jwt__SigningKey: OrnekkoyBelediyesi-Demo-SuperSecret-Key-32chars!
+      Jwt__ExpirationMinutes: "120"
+    ports:
+      - "5100:8080"
+
+  webui:
+    build:
+      context: .
+      dockerfile: src/CitizenGateway.WebUI/Dockerfile
+    container_name: cg-webui
+    depends_on:
+      - gateway
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # WebUI sunucu tarafı HttpClient → gateway container.
+      Gateway__BaseUrl: http://gateway:8080
+      Gateway__Username: personel
+      Gateway__Password: Personel123!
+    ports:
+      - "5104:8080"
+
+volumes:
+  cg_pgdata:
