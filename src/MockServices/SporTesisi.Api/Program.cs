@@ -1,25 +1,30 @@
+using SporTesisi.Api.Data;
+
+// SENTETİK VERİ UYARISI: Bu servis gerçek belediye/spor sistemi değildir.
+// Tüm yanıtlar Bogus ile üretilmiş sahte kayıtlardır; gerçek kişi verisi yoktur.
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "SporTesisi Mock API",
+        Description = "Örnekköy Belediyesi spor tesisi simülasyonu — tamamen sentetik veri."
+    });
+});
+
+// Singleton: seed bir kez üretilir, tüm istekler aynı katalogu görür.
+builder.Services.AddSingleton<SporTesisiSeedStore>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
+// Demo'da Swagger her ortamda açık — keşif kolaylığı için.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { service = "SporTesisi.Api", status = "Healthy" }));
 
 app.Run();

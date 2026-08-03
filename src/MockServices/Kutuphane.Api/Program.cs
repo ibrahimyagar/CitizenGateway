@@ -1,25 +1,27 @@
+using Kutuphane.Api.Data;
+
+// SENTETİK VERİ UYARISI: Gerçek kütüphane sistemine bağlantı yoktur.
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "Kutuphane Mock API",
+        Description = "Örnekköy Belediyesi kütüphane simülasyonu — tamamen sentetik veri."
+    });
+});
+
+builder.Services.AddSingleton<KutuphaneSeedStore>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { service = "Kutuphane.Api", status = "Healthy" }));
 
 app.Run();
