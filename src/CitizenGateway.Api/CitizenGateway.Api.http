@@ -1,6 +1,17 @@
-@CitizenGateway.Api_HostAddress = http://localhost:5053
+@CitizenGateway.Api_HostAddress = http://localhost:5100
 
-GET {{CitizenGateway.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Login (Personel)
+POST {{CitizenGateway.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
 
-###
+{
+  "username": "personel",
+  "password": "Personel123!"
+}
+
+### Summary (Bearer token gerekli)
+GET {{CitizenGateway.Api_HostAddress}}/api/citizen/71151275166/summary
+Authorization: Bearer {{token}}
+
+### Health
+GET {{CitizenGateway.Api_HostAddress}}/health
