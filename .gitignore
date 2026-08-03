@@ -1,0 +1,37 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.jfm
+.vs/
+*.DotSettings.user
+
+## Build / publish
+publish/
+out/
+artifacts/
+
+## Secrets / local overrides
+appsettings.*.local.json
+.env
+.env.*
+
+## OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*~
+
+## Test / coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+## Docker
+*.log

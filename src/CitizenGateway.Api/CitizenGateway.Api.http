@@ -1,0 +1,6 @@
+@CitizenGateway.Api_HostAddress = http://localhost:5053
+
+GET {{CitizenGateway.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
