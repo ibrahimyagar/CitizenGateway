@@ -1,10 +1,132 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Vatandaş Özeti";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="mb-4">
+    <h1 class="h3 mb-1">Örnekköy Belediyesi — Vatandaş Özeti</h1>
+    <p class="text-muted mb-0">
+        SENTETİK DEMO: Gerçek kişi verisi yoktur. Gateway üzerinden 3 mock servis sorgulanır.
+    </p>
 </div>
+
+<form method="post" class="row g-2 align-items-end mb-4">
+    <div class="col-md-6">
+        <label asp-for="TcNo" class="form-label"></label>
+        <input asp-for="TcNo" class="form-control" maxlength="11" autocomplete="off" />
+        <span asp-validation-for="TcNo" class="text-danger"></span>
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">Sorgula</button>
+    </div>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+@if (Model.Summary is not null)
+{
+    <div class="mb-3">
+        <strong>@Model.Summary.AdSoyad</strong>
+        <span class="text-muted">— @Model.Summary.TcNo</span>
+        @if (Model.Summary.PartialFailure)
+        {
+            <span class="badge text-bg-warning ms-2">Kısmi sonuç: @string.Join(", ", Model.Summary.FailedServices)</span>
+        }
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header">Spor Tesisi</div>
+                <div class="card-body">
+                    @if (Model.Summary.SporTesisi is null)
+                    {
+                        <p class="text-muted mb-0">Veri yok / servis başarısız</p>
+                    }
+                    else
+                    {
+                        var s = Model.Summary.SporTesisi;
+                        <p class="mb-1"><strong>Tesis:</strong> @s.TesisAdi</p>
+                        <p class="mb-1"><strong>Üyelik:</strong> @(s.UyelikAktif ? "Aktif" : "Pasif")</p>
+                        <p class="mb-1"><strong>Kontör:</strong> @s.KontorBakiye</p>
+                        <p class="mb-0"><strong>Bitiş:</strong> @s.UyelikBitisTarihi</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header">Kütüphane</div>
+                <div class="card-body">
+                    @if (Model.Summary.Kutuphane is null)
+                    {
+                        <p class="text-muted mb-0">Veri yok / servis başarısız</p>
+                    }
+                    else
+                    {
+                        var k = Model.Summary.Kutuphane;
+                        <p class="mb-2"><strong>Aktif ödünç:</strong> @k.AktifOduncSayisi</p>
+                        @if (k.Randevular.Count == 0)
+                        {
+                            <p class="text-muted mb-0">Randevu yok</p>
+                        }
+                        else
+                        {
+                            <ul class="list-unstyled mb-0 small">
+                                @foreach (var r in k.Randevular.Take(3))
+                                {
+                                    <li class="mb-2">
+                                        <div>@r.Tarih — @r.Salon</div>
+                                        <div class="text-muted">@r.Konu (@r.Durum)</div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header">Çözüm Merkezi</div>
+                <div class="card-body">
+                    @if (Model.Summary.CozumMerkezi is null)
+                    {
+                        <p class="text-muted mb-0">Veri yok / servis başarısız</p>
+                    }
+                    else
+                    {
+                        var c = Model.Summary.CozumMerkezi;
+                        <p class="mb-2"><strong>Açık talep:</strong> @c.AcikTalepSayisi</p>
+                        @if (c.Talepler.Count == 0)
+                        {
+                            <p class="text-muted mb-0">Talep yok</p>
+                        }
+                        else
+                        {
+                            <ul class="list-unstyled mb-0 small">
+                                @foreach (var t in c.Talepler.Take(3))
+                                {
+                                    <li class="mb-2">
+                                        <div>@t.TalepNo — @t.Durum</div>
+                                        <div class="text-muted">@t.Konu (@t.Kategori)</div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
