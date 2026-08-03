@@ -1,0 +1,39 @@
+@page
+@model AuditModel
+@{
+    ViewData["Title"] = "Audit Logları";
+}
+
+<h1 class="h3 mb-3">Audit logları</h1>
+<p class="text-muted">Kim, ne zaman, hangi vatandaş verisine baktı? (Personel)</p>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Zaman</th>
+                <th>Rol</th>
+                <th>TC</th>
+                <th>Endpoint</th>
+                <th>IP</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var log in Model.Logs)
+        {
+            <tr>
+                <td>@log.Timestamp.ToLocalTime().ToString("g")</td>
+                <td>@log.UserRole</td>
+                <td>@log.AccessedCitizenTcNo</td>
+                <td><code>@log.AccessedEndpoint</code></td>
+                <td>@log.IpAddress</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

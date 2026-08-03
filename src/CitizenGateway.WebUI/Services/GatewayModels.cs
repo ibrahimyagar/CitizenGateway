@@ -1,8 +1,22 @@
-using System.Text.Json.Serialization;
-
 namespace CitizenGateway.WebUI.Services;
 
-/// <summary>Gateway /summary yanıtının WebUI tarafındaki sade modeli.</summary>
+public sealed class LoginResponse
+{
+    public string AccessToken { get; set; } = "";
+    public string Username { get; set; } = "";
+    public string Role { get; set; } = "";
+    public string? LinkedCitizenTcNo { get; set; }
+}
+
+public sealed class CitizenListItem
+{
+    public Guid Id { get; set; }
+    public string TcNo { get; set; } = "";
+    public string AdSoyad { get; set; } = "";
+    public DateOnly DogumTarihi { get; set; }
+    public string Telefon { get; set; } = "";
+}
+
 public sealed class CitizenSummaryViewModel
 {
     public string TcNo { get; set; } = "";
@@ -51,8 +65,29 @@ public sealed class TalepItem
     public DateOnly AcilisTarihi { get; set; }
 }
 
-public sealed class LoginResponse
+public sealed class ServiceRequestItem
 {
-    [JsonPropertyName("accessToken")]
-    public string AccessToken { get; set; } = "";
+    public Guid Id { get; set; }
+    public string TcNo { get; set; } = "";
+    public string RequestType { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string TargetService { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+public sealed class AuditLogItem
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string UserRole { get; set; } = "";
+    public string AccessedCitizenTcNo { get; set; } = "";
+    public string AccessedEndpoint { get; set; } = "";
+    public DateTimeOffset Timestamp { get; set; }
+    public string IpAddress { get; set; } = "";
+}
+
+public sealed class HealthStatus
+{
+    public string Status { get; set; } = "Unknown";
+    public string? Service { get; set; }
 }

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using CitizenGateway.Api.Auth;
 using CitizenGateway.Api.Middleware;
 using CitizenGateway.Application;
@@ -10,7 +11,12 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Enum'ları string yaz — WebUI ve Swagger daha okunaklı olsun.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

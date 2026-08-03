@@ -4,28 +4,60 @@
     ViewData["Title"] = "Vatandaş Özeti";
 }
 
-<div class="mb-4">
-    <h1 class="h3 mb-1">Örnekköy Belediyesi — Vatandaş Özeti</h1>
-    <p class="text-muted mb-0">
-        SENTETİK DEMO: Gerçek kişi verisi yoktur. Gateway üzerinden 3 mock servis sorgulanır.
-    </p>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Vatandaş Servis Özeti</h1>
+        <p class="text-muted mb-0">SENTETİK DEMO — @Model.Username (@(Model.IsPersonel ? "Personel" : "Vatandaş"))</p>
+    </div>
+    <div>
+        @{
+            var healthClass = Model.Health.Status == "Healthy" ? "text-bg-success"
+                : Model.Health.Status == "Degraded" ? "text-bg-warning"
+                : "text-bg-danger";
+        }
+        <span class="badge @healthClass">Gateway: @Model.Health.Status</span>
+    </div>
 </div>
-
-<form method="post" class="row g-2 align-items-end mb-4">
-    <div class="col-md-6">
-        <label asp-for="TcNo" class="form-label"></label>
-        <input asp-for="TcNo" class="form-control" maxlength="11" autocomplete="off" />
-        <span asp-validation-for="TcNo" class="text-danger"></span>
-    </div>
-    <div class="col-md-3">
-        <button type="submit" class="btn btn-primary w-100">Sorgula</button>
-    </div>
-</form>
 
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
     <div class="alert alert-danger">@Model.ErrorMessage</div>
 }
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="post" asp-page-handler="Query" class="row g-3 align-items-end">
+            @if (Model.IsPersonel && Model.CitizenOptions.Count > 0)
+            {
+                <div class="col-md-6">
+                    <label class="form-label">Vatandaş seç</label>
+                    <select asp-for="TcNo" asp-items="Model.CitizenOptions" class="form-select"></select>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-6">
+                    <label asp-for="TcNo" class="form-label"></label>
+                    @if (Model.IsPersonel)
+                    {
+                        <input asp-for="TcNo" class="form-control" maxlength="11" />
+                    }
+                    else
+                    {
+                        <input asp-for="TcNo" class="form-control" maxlength="11" readonly />
+                    }
+                </div>
+            }
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Sorgula</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @if (Model.Summary is not null)
 {
@@ -34,18 +66,18 @@
         <span class="text-muted">— @Model.Summary.TcNo</span>
         @if (Model.Summary.PartialFailure)
         {
-            <span class="badge text-bg-warning ms-2">Kısmi sonuç: @string.Join(", ", Model.Summary.FailedServices)</span>
+            <span class="badge text-bg-warning ms-2">Kısmi: @string.Join(", ", Model.Summary.FailedServices)</span>
         }
     </div>
 
-    <div class="row g-3">
+    <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header">Spor Tesisi</div>
                 <div class="card-body">
                     @if (Model.Summary.SporTesisi is null)
                     {
-                        <p class="text-muted mb-0">Veri yok / servis başarısız</p>
+                        <p class="text-muted mb-0">Veri yok</p>
                     }
                     else
                     {
@@ -58,75 +90,101 @@
                 </div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header">Kütüphane</div>
                 <div class="card-body">
                     @if (Model.Summary.Kutuphane is null)
                     {
-                        <p class="text-muted mb-0">Veri yok / servis başarısız</p>
+                        <p class="text-muted mb-0">Veri yok</p>
                     }
                     else
                     {
                         var k = Model.Summary.Kutuphane;
                         <p class="mb-2"><strong>Aktif ödünç:</strong> @k.AktifOduncSayisi</p>
-                        @if (k.Randevular.Count == 0)
+                        @foreach (var r in k.Randevular.Take(3))
                         {
-                            <p class="text-muted mb-0">Randevu yok</p>
-                        }
-                        else
-                        {
-                            <ul class="list-unstyled mb-0 small">
-                                @foreach (var r in k.Randevular.Take(3))
-                                {
-                                    <li class="mb-2">
-                                        <div>@r.Tarih — @r.Salon</div>
-                                        <div class="text-muted">@r.Konu (@r.Durum)</div>
-                                    </li>
-                                }
-                            </ul>
+                            <div class="small mb-2">@r.Tarih — @r.Salon <span class="text-muted">(@r.Durum)</span></div>
                         }
                     }
                 </div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header">Çözüm Merkezi</div>
                 <div class="card-body">
                     @if (Model.Summary.CozumMerkezi is null)
                     {
-                        <p class="text-muted mb-0">Veri yok / servis başarısız</p>
+                        <p class="text-muted mb-0">Veri yok</p>
                     }
                     else
                     {
                         var c = Model.Summary.CozumMerkezi;
                         <p class="mb-2"><strong>Açık talep:</strong> @c.AcikTalepSayisi</p>
-                        @if (c.Talepler.Count == 0)
+                        @foreach (var t in c.Talepler.Take(3))
                         {
-                            <p class="text-muted mb-0">Talep yok</p>
-                        }
-                        else
-                        {
-                            <ul class="list-unstyled mb-0 small">
-                                @foreach (var t in c.Talepler.Take(3))
-                                {
-                                    <li class="mb-2">
-                                        <div>@t.TalepNo — @t.Durum</div>
-                                        <div class="text-muted">@t.Konu (@t.Kategori)</div>
-                                    </li>
-                                }
-                            </ul>
+                            <div class="small mb-2">@t.TalepNo — @t.Konu <span class="text-muted">(@t.Durum)</span></div>
                         }
                     }
                 </div>
             </div>
         </div>
     </div>
-}
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <div class="card mb-4">
+        <div class="card-header">Yeni talep oluştur</div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="CreateRequest" class="row g-2 align-items-end">
+                <input type="hidden" asp-for="TcNo" />
+                <div class="col-md-6">
+                    <label asp-for="NewRequestType" class="form-label"></label>
+                    <select asp-for="NewRequestType" class="form-select">
+                        <option value="KursKaydi">Kurs kaydı → Spor Tesisi</option>
+                        <option value="RandevuTalebi">Randevu talebi → Kütüphane</option>
+                        <option value="SikayetAcma">Şikayet açma → Çözüm Merkezi</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-outline-primary w-100">Talep gönder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Talep geçmişi</div>
+        <div class="card-body p-0">
+            @if (Model.Requests.Count == 0)
+            {
+                <p class="text-muted p-3 mb-0">Kayıt yok</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tür</th>
+                                <th>Hedef</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var r in Model.Requests)
+                        {
+                            <tr>
+                                <td>@r.RequestType</td>
+                                <td>@r.TargetService</td>
+                                <td>@r.Status</td>
+                                <td>@r.CreatedAt.ToLocalTime().ToString("g")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 }

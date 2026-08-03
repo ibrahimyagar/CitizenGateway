@@ -1,0 +1,35 @@
+@page
+@model LoginModel
+@{
+    ViewData["Title"] = "Giriş";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <h1 class="h3 mb-2">Giriş</h1>
+        <p class="text-muted">SENTETİK DEMO — gerçek kimlik verisi yoktur.</p>
+
+        <div class="alert alert-light border small">
+            <div><strong>personel</strong> / Personel123! — tüm vatandaşlar</div>
+            <div><strong>vatandas</strong> / Vatandas123! — yalnızca kendi TC</div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger">@Model.ErrorMessage</div>
+        }
+
+        <form method="post" class="vstack gap-3">
+            <div>
+                <label asp-for="Username" class="form-label">Kullanıcı adı</label>
+                <input asp-for="Username" class="form-control" autocomplete="username" />
+            </div>
+            <div>
+                <label asp-for="Password" class="form-label">Şifre</label>
+                <input asp-for="Password" class="form-control" autocomplete="current-password" />
+            </div>
+            <button type="submit" class="btn btn-primary">Giriş yap</button>
+        </form>
+    </div>
+</div>

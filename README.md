@@ -99,6 +99,8 @@ docker compose up --build
 | WebUI | http://localhost:5104 |
 | PostgreSQL | localhost:5433 (`postgres` / `postgres`) |
 
+**WebUI akışı:** Login → vatandaş seç (Personel) veya kendi TC (Vatandaş) → Sorgula → 3 servis kartı + talep oluştur/listele → Personel için Audit sayfası.
+
 Durdurmak için: `docker compose down`
 
 ### Seçenek B — Lokal `dotnet run`
@@ -138,6 +140,7 @@ dotnet run --project src/CitizenGateway.WebUI --launch-profile http
 | Method | Endpoint | Açıklama | Yetki |
 |--------|----------|----------|-------|
 | POST | `/api/auth/login` | JWT üretir | Herkese açık |
+| GET | `/api/citizens` | Seed vatandaş listesi (UI seçici) | Sadece Personel |
 | GET | `/api/citizen/{tcNo}/summary` | 3 mock servise paralel istek; konsolide özet (`PartialFailure` destekli) | Personel: herkes · Vatandaş: kendi TC |
 | POST | `/api/citizen/{tcNo}/requests` | Yeni talep oluşturur, mock’a iletir, DB’ye yazar | Personel + Vatandaş (kendi adına) |
 | GET | `/api/citizen/{tcNo}/requests` | Geçmiş talepleri listeler | Personel: herkes · Vatandaş: kendi TC |

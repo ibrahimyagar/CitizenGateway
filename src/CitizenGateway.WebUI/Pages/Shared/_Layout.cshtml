@@ -9,18 +9,32 @@
 </head>
 <body>
     <header class="border-bottom mb-4">
-        <div class="container py-3">
-            <strong>CitizenGateway WebUI</strong>
-            <span class="text-muted small ms-2">sentetik demo</span>
+        <div class="container py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <a class="text-decoration-none text-dark fw-semibold" asp-page="/Index">CitizenGateway</a>
+                <span class="text-muted small ms-2">sentetik demo</span>
+            </div>
+            <nav class="d-flex align-items-center gap-3">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a class="text-decoration-none" asp-page="/Index">Özet</a>
+                    @if (User.IsInRole("Personel"))
+                    {
+                        <a class="text-decoration-none" asp-page="/Audit">Audit</a>
+                    }
+                    <span class="text-muted small">@User.Identity?.Name</span>
+                    <form method="post" asp-page="/Logout" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Çıkış</button>
+                    </form>
+                }
+            </nav>
         </div>
     </header>
-    <div class="container pb-4">
+    <div class="container pb-5">
         @RenderBody()
     </div>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

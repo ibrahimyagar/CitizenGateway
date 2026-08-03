@@ -16,6 +16,12 @@ public sealed class CitizenRepository : ICitizenRepository
     public Task<Citizen?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         _db.Citizens.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<Citizen>> ListAsync(CancellationToken cancellationToken = default) =>
+        await _db.Citizens
+            .AsNoTracking()
+            .OrderBy(c => c.AdSoyad)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(Citizen citizen, CancellationToken cancellationToken = default)
     {
         await _db.Citizens.AddAsync(citizen, cancellationToken);
