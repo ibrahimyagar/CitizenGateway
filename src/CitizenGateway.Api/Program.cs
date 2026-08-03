@@ -1,25 +1,34 @@
+using CitizenGateway.Infrastructure;
+using CitizenGateway.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Infrastructure: EF Core (Npgsql) + repository'ler + Polly'li HttpClient adapter'ları.
+// Provider değiştirmek kolay: Infrastructure/DependencyInjection.cs içinde
+//   options.UseNpgsql(...) → options.UseSqlServer(...) / UseSqlite(...)
+// Connection string ise appsettings.json → ConnectionStrings:GatewayDb (veya env).
+builder.Services.AddInfrastructure(builder.Configuration);
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Geliştirmede Swagger açık; production'da da demo için açık bırakılabilir (Phase 6'da netleşir).
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
+// İlk açılışta migrate + sentetik seed (idempotent).
+await DbSeeder.SeedAsync(app.Services);
+
 app.Run();
+
+// WebApplicationFactory entegrasyon testleri için partial Program erişimi (Phase 9).
+public partial class Program;
