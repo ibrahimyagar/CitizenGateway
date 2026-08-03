@@ -1,11 +1,10 @@
-using Bogus;
 using Kutuphane.Api.Models;
 using MockServices.Shared;
 
 namespace Kutuphane.Api.Data;
 
 /// <summary>
-/// In-memory kütüphane seed — SharedCitizenCatalog ile ortak TC havuzu.
+/// Kütüphane demo verisi — Türkçe durum + okunabilir randevu konuları.
 /// </summary>
 public sealed class KutuphaneSeedStore
 {
@@ -13,34 +12,49 @@ public sealed class KutuphaneSeedStore
 
     public KutuphaneSeedStore()
     {
-        Randomizer.Seed = new Random(SharedCitizenCatalog.Seed + 1);
-        var faker = new Faker("tr");
-        var salonlar = new[] { "Sessiz Çalışma Salonu", "Çocuk Bölümü", "Dijital Arşiv", "Seminer Odası A" };
-        var konular = new[] { "Çalışma masası", "Grup çalışması", "Kitap kulübü", "Dijital tarama" };
-        var durumlar = new[] { "Tamamlandi", "Beklemede", "Iptal" };
-
-        _byTc = SharedCitizenCatalog.All.ToDictionary(
-            c => c.TcNo,
-            c =>
-            {
-                var randevuCount = faker.Random.Int(1, 4);
-                var randevular = Enumerable.Range(0, randevuCount)
-                    .Select(_ => new KutuphaneRandevu(
-                        DateOnly.FromDateTime(faker.Date.Between(DateTime.UtcNow.AddMonths(-6), DateTime.UtcNow.AddMonths(1))),
-                        faker.PickRandom(salonlar),
-                        faker.PickRandom(konular),
-                        faker.PickRandom(durumlar)))
-                    .OrderByDescending(r => r.Tarih)
-                    .ToList();
-
-                return new KutuphaneResponse(
-                    c.TcNo,
-                    c.AdSoyad,
-                    faker.Random.Int(0, 5),
-                    randevular);
-            });
+        _byTc = SharedCitizenCatalog.All
+            .Select((c, i) => Build(c, i))
+            .ToDictionary(r => r.TcNo);
     }
 
     public KutuphaneResponse? Find(string tcNo) =>
         _byTc.TryGetValue(tcNo, out var record) ? record : null;
+
+    private static KutuphaneResponse Build(SyntheticCitizen c, int index)
+    {
+        IReadOnlyList<KutuphaneRandevu> randevular = index switch
+        {
+            0 =>
+            [
+                new(new DateOnly(2026, 8, 10), "Sessiz Çalışma Salonu", "Ödev / çalışma masası", "Beklemede"),
+                new(new DateOnly(2026, 7, 2), "Kitap Kulübü Salonu", "Kitap kulübü toplantısı", "Tamamlandı")
+            ],
+            1 =>
+            [
+                new(new DateOnly(2026, 8, 5), "Dijital Arşiv", "Belge tarama", "Beklemede")
+            ],
+            2 =>
+            [
+                new(new DateOnly(2026, 6, 18), "Çocuk Bölümü", "Etkinlik kaydı", "İptal")
+            ],
+            _ =>
+            [
+                new(
+                    new DateOnly(2026, 5, 1).AddDays(index),
+                    index % 2 == 0 ? "Sessiz Çalışma Salonu" : "Seminer Odası A",
+                    index % 2 == 0 ? "Çalışma masası" : "Grup çalışması",
+                    index % 3 == 0 ? "Tamamlandı" : "Beklemede")
+            ]
+        };
+
+        var odunc = index switch
+        {
+            0 => 2,
+            1 => 0,
+            2 => 1,
+            _ => index % 4
+        };
+
+        return new KutuphaneResponse(c.TcNo, c.AdSoyad, odunc, randevular);
+    }
 }

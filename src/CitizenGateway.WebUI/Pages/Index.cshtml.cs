@@ -1,5 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
+using CitizenGateway.Contracts.Citizens;
+using CitizenGateway.Contracts.Health;
+using CitizenGateway.Contracts.Requests;
+using CitizenGateway.Domain.Enums;
 using CitizenGateway.WebUI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,22 +13,25 @@ namespace CitizenGateway.WebUI.Pages;
 public sealed class IndexModel : PageModel
 {
     private readonly GatewayApiClient _gateway;
+    private readonly CitizenWorkspaceLoader _workspace;
     private readonly ILogger<IndexModel> _logger;
 
-    public IndexModel(GatewayApiClient gateway, ILogger<IndexModel> logger)
+    public IndexModel(
+        GatewayApiClient gateway,
+        CitizenWorkspaceLoader workspace,
+        ILogger<IndexModel> logger)
     {
         _gateway = gateway;
+        _workspace = workspace;
         _logger = logger;
     }
 
-    public bool IsPersonel => User.IsInRole("Personel");
-    public string? LinkedTcNo => User.FindFirstValue(WebUiClaimTypes.LinkedTcNo);
+    public bool IsPersonel { get; private set; }
     public string Username => User.Identity?.Name ?? "";
-
-    public HealthStatus Health { get; private set; } = new();
+    public GatewayHealthDto Health { get; private set; } = new();
     public List<SelectListItem> CitizenOptions { get; private set; } = [];
-    public CitizenSummaryViewModel? Summary { get; private set; }
-    public IReadOnlyList<ServiceRequestItem> Requests { get; private set; } = [];
+    public CitizenSummaryDto? Summary { get; private set; }
+    public IReadOnlyList<ServiceRequestDto> Requests { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public string? SuccessMessage { get; private set; }
 
@@ -35,37 +41,31 @@ public sealed class IndexModel : PageModel
 
     [BindProperty]
     [Display(Name = "Talep türü")]
-    public string NewRequestType { get; set; } = "KursKaydi";
+    public RequestType NewRequestType { get; set; } = RequestType.KursKaydi;
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        await LoadShellAsync(cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(TcNo))
-            TcNo = LinkedTcNo ?? CitizenOptions.FirstOrDefault()?.Value ?? "71151275166";
+        var shell = await _workspace.LoadShellAsync(User, cancellationToken);
+        ApplyShell(shell);
+        TcNo = _workspace.ResolveDefaultTc(shell, TcNo);
     }
 
     public async Task<IActionResult> OnPostQueryAsync(CancellationToken cancellationToken)
     {
-        await LoadShellAsync(cancellationToken);
+        var shell = await _workspace.LoadShellAsync(User, cancellationToken);
+        ApplyShell(shell);
 
-        if (string.IsNullOrWhiteSpace(TcNo))
+        if (!TryAuthorizeTc(shell, out var error))
         {
-            ErrorMessage = "TC seçin veya girin.";
-            return Page();
-        }
-
-        if (!IsPersonel && !string.Equals(TcNo, LinkedTcNo, StringComparison.Ordinal))
-        {
-            ErrorMessage = "Vatandaş yalnızca kendi TC'sini sorgulayabilir.";
-            TcNo = LinkedTcNo ?? TcNo;
+            ErrorMessage = error;
             return Page();
         }
 
         try
         {
-            Summary = await _gateway.GetSummaryAsync(TcNo.Trim(), cancellationToken);
-            Requests = await _gateway.GetRequestsAsync(TcNo.Trim(), cancellationToken);
+            var data = await _workspace.LoadCitizenAsync(TcNo.Trim(), cancellationToken);
+            Summary = data.Summary;
+            Requests = data.Requests;
         }
         catch (Exception ex)
         {
@@ -78,11 +78,12 @@ public sealed class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostCreateRequestAsync(CancellationToken cancellationToken)
     {
-        await LoadShellAsync(cancellationToken);
+        var shell = await _workspace.LoadShellAsync(User, cancellationToken);
+        ApplyShell(shell);
 
-        if (string.IsNullOrWhiteSpace(TcNo))
+        if (!TryAuthorizeTc(shell, out var error))
         {
-            ErrorMessage = "Önce bir TC seçin.";
+            ErrorMessage = error;
             return Page();
         }
 
@@ -90,8 +91,9 @@ public sealed class IndexModel : PageModel
         {
             await _gateway.CreateRequestAsync(TcNo.Trim(), NewRequestType, cancellationToken);
             SuccessMessage = "Talep oluşturuldu.";
-            Summary = await _gateway.GetSummaryAsync(TcNo.Trim(), cancellationToken);
-            Requests = await _gateway.GetRequestsAsync(TcNo.Trim(), cancellationToken);
+            var data = await _workspace.LoadCitizenAsync(TcNo.Trim(), cancellationToken);
+            Summary = data.Summary;
+            Requests = data.Requests;
         }
         catch (Exception ex)
         {
@@ -99,33 +101,44 @@ public sealed class IndexModel : PageModel
             ErrorMessage = ex.Message;
             try
             {
-                Summary = await _gateway.GetSummaryAsync(TcNo.Trim(), cancellationToken);
-                Requests = await _gateway.GetRequestsAsync(TcNo.Trim(), cancellationToken);
+                var data = await _workspace.LoadCitizenAsync(TcNo.Trim(), cancellationToken);
+                Summary = data.Summary;
+                Requests = data.Requests;
             }
-            catch { /* ignore */ }
+            catch
+            {
+                // ignore secondary load failure
+            }
         }
 
         return Page();
     }
 
-    private async Task LoadShellAsync(CancellationToken cancellationToken)
+    private void ApplyShell(WorkspaceShell shell)
     {
-        Health = await _gateway.GetHealthAsync(cancellationToken);
+        Health = shell.Health;
+        IsPersonel = shell.IsPersonel;
+        CitizenOptions = shell.CitizenOptions;
+    }
 
-        if (!IsPersonel)
-            return;
+    private bool TryAuthorizeTc(WorkspaceShell shell, out string? error)
+    {
+        error = null;
 
-        try
+        if (string.IsNullOrWhiteSpace(TcNo))
         {
-            var citizens = await _gateway.ListCitizensAsync(cancellationToken);
-            CitizenOptions = citizens
-                .Select(c => new SelectListItem($"{c.AdSoyad} — {c.TcNo}", c.TcNo))
-                .ToList();
+            error = "TC seçin veya girin.";
+            return false;
         }
-        catch (Exception ex)
+
+        if (!shell.IsPersonel &&
+            !string.Equals(TcNo, shell.LinkedTcNo, StringComparison.Ordinal))
         {
-            _logger.LogWarning(ex, "Vatandaş listesi alınamadı");
-            CitizenOptions = [];
+            error = "Vatandaş yalnızca kendi TC'sini sorgulayabilir.";
+            TcNo = shell.LinkedTcNo ?? TcNo;
+            return false;
         }
+
+        return true;
     }
 }

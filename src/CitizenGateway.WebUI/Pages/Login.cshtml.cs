@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using CitizenGateway.Domain.Enums;
 using CitizenGateway.WebUI.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -11,17 +12,27 @@ namespace CitizenGateway.WebUI.Pages;
 public sealed class LoginModel : PageModel
 {
     private readonly GatewayApiClient _gateway;
+    private readonly ILogger<LoginModel> _logger;
 
-    public LoginModel(GatewayApiClient gateway) => _gateway = gateway;
+    public LoginModel(GatewayApiClient gateway, ILogger<LoginModel> logger)
+    {
+        _gateway = gateway;
+        _logger = logger;
+    }
 
     [BindProperty]
-    [Required]
-    public string Username { get; set; } = "personel";
+    public LoginPortal Portal { get; set; } = LoginPortal.Personel;
 
     [BindProperty]
-    [Required]
+    [Required(ErrorMessage = "Bu alan zorunludur.")]
+    [Display(Name = "Kimlik")]
+    public string Identifier { get; set; } = "";
+
+    [BindProperty]
+    [Required(ErrorMessage = "Şifre gerekli.")]
     [DataType(DataType.Password)]
-    public string Password { get; set; } = "Personel123!";
+    [Display(Name = "Şifre")]
+    public string Password { get; set; } = "";
 
     public string? ErrorMessage { get; private set; }
 
@@ -40,11 +51,11 @@ public sealed class LoginModel : PageModel
 
         try
         {
-            var login = await _gateway.LoginAsync(Username.Trim(), Password, cancellationToken);
+            var login = await _gateway.LoginAsync(Portal, Identifier.Trim(), Password, cancellationToken);
 
             var claims = new List<Claim>
             {
-                new(ClaimTypes.Name, login.Username),
+                new(ClaimTypes.Name, login.DisplayName),
                 new(ClaimTypes.Role, login.Role),
                 new(WebUiClaimTypes.AccessToken, login.AccessToken)
             };
@@ -61,7 +72,8 @@ public sealed class LoginModel : PageModel
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            _logger.LogWarning(ex, "Giriş başarısız. Portal={Portal}", Portal);
+            ErrorMessage = "Giriş başarısız. Bilgilerinizi kontrol edin.";
             return Page();
         }
     }

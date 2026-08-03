@@ -1,6 +1,6 @@
 using CitizenGateway.Application.Abstractions;
-using CitizenGateway.Application.DTOs.External;
-using CitizenGateway.Application.Services;
+using CitizenGateway.Contracts.External;
+using CitizenGateway.Application.Features.Citizens;
 using CitizenGateway.Domain.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;

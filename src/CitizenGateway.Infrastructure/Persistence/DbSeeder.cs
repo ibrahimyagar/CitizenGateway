@@ -11,14 +11,21 @@ namespace CitizenGateway.Infrastructure.Persistence;
 
 /// <summary>
 /// SENTETİK seed — gerçek kişi/belediye verisi YOKTUR.
-/// SharedCitizenCatalog (seed=42) ile mock servisler aynı TC havuzunu paylaşır.
 /// </summary>
 public static class DbSeeder
 {
-    public const string PersonelUsername = "personel";
+    public const string PersonelEmail = "aylin.kara@ornekkoy.bel.tr";
+    public const string PersonelDisplayName = "Aylin Kara";
     public const string PersonelPassword = "Personel123!";
-    public const string VatandasUsername = "vatandas";
+
+    /// <summary>Ayşe Demir (katalog[0]) — giriş kimliği kendi TC'sidir.</summary>
     public const string VatandasPassword = "Vatandas123!";
+
+    /// <summary>Test / dokümantasyon — personel giriş e-postası.</summary>
+    public const string PersonelUsername = PersonelEmail;
+
+    /// <summary>Test — demo vatandaşın T.C. (katalog[0], Ayşe Demir).</summary>
+    public static string VatandasUsername => SharedCitizenCatalog.All[0].TcNo;
 
     public static async Task SeedAsync(IServiceProvider services, CancellationToken cancellationToken = default)
     {
@@ -26,12 +33,12 @@ public static class DbSeeder
         var db = scope.ServiceProvider.GetRequiredService<GatewayDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
-        // Migrate: geliştirmede şemayı otomatik güncel tutar (demo kolaylığı).
         await db.Database.MigrateAsync(cancellationToken);
 
         if (await db.Citizens.AnyAsync(cancellationToken))
         {
-            logger.LogInformation("Seed atlandı — veritabanında zaten vatandaş kaydı var.");
+            await EnsureModernLoginAccountsAsync(db, logger, cancellationToken);
+            logger.LogInformation("Seed atlandı — vatandaşlar mevcut; giriş hesapları senkronlandı.");
             return;
         }
 
@@ -50,39 +57,111 @@ public static class DbSeeder
 
         await db.Citizens.AddRangeAsync(citizens, cancellationToken);
 
-        // Birkaç örnek talep — talep akışı demosu için.
         var sampleRequests = new List<ServiceRequest>
         {
             ServiceRequest.Create(citizens[0].Id, RequestType.KursKaydi, TargetService.SporTesisi, RequestStatus.Onaylandi),
+            ServiceRequest.Create(citizens[0].Id, RequestType.RandevuTalebi, TargetService.Kutuphane, RequestStatus.Beklemede),
             ServiceRequest.Create(citizens[1].Id, RequestType.RandevuTalebi, TargetService.Kutuphane, RequestStatus.Beklemede),
-            ServiceRequest.Create(citizens[2].Id, RequestType.SikayetAcma, TargetService.CozumMerkezi, RequestStatus.Reddedildi),
-            ServiceRequest.Create(citizens[0].Id, RequestType.RandevuTalebi, TargetService.Kutuphane, RequestStatus.Beklemede)
+            ServiceRequest.Create(citizens[2].Id, RequestType.SikayetAcma, TargetService.CozumMerkezi, RequestStatus.Reddedildi)
         };
         await db.ServiceRequests.AddRangeAsync(sampleRequests, cancellationToken);
 
-        // PasswordHasher: düz metin asla saklanmaz; Identity hasher demo için yeterli.
         var hasher = new PasswordHasher<ApplicationUser>();
-        var hashProbe = ApplicationUser.CreatePersonel("probe", "probe-hash-placeholder");
+        var probe = ApplicationUser.CreatePersonel("probe@ornekkoy.bel.tr", "Probe", "probe-hash-placeholder");
 
         var personel = ApplicationUser.CreatePersonel(
-            PersonelUsername,
-            hasher.HashPassword(hashProbe, PersonelPassword));
+            PersonelEmail,
+            PersonelDisplayName,
+            hasher.HashPassword(probe, PersonelPassword));
 
         var linkedCitizen = citizens[0];
         var vatandas = ApplicationUser.CreateVatandas(
-            VatandasUsername,
-            hasher.HashPassword(hashProbe, VatandasPassword),
+            linkedCitizen.TcNo,
+            linkedCitizen.AdSoyad,
+            hasher.HashPassword(probe, VatandasPassword),
             linkedCitizen.Id);
 
         await db.Users.AddRangeAsync([personel, vatandas], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
-            "Seed tamamlandı. Demo: {Personel}/{PersonelPass}, {Vatandas}/{VatandasPass} (bağlı TC: {Tc})",
-            PersonelUsername,
-            PersonelPassword,
-            VatandasUsername,
-            VatandasPassword,
+            "Seed tamamlandı. Personel: {Email}, Vatandaş TC: {Tc}",
+            PersonelEmail,
             linkedCitizen.TcNo);
+    }
+
+    /// <summary>Eski personel/vatandas kullanıcı adlarını gerçekçi kimliklere taşır.</summary>
+    private static async Task EnsureModernLoginAccountsAsync(
+        GatewayDbContext db,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var hasher = new PasswordHasher<ApplicationUser>();
+        var probe = ApplicationUser.CreatePersonel("probe@ornekkoy.bel.tr", "Probe", "probe-hash-placeholder");
+        var changed = false;
+
+        var personel = await db.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Personel, cancellationToken);
+        if (personel is null)
+        {
+            personel = ApplicationUser.CreatePersonel(
+                PersonelEmail,
+                PersonelDisplayName,
+                hasher.HashPassword(probe, PersonelPassword));
+            await db.Users.AddAsync(personel, cancellationToken);
+            changed = true;
+        }
+        else
+        {
+            if (!string.Equals(personel.Username, PersonelEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                personel.SetLoginIdentifier(PersonelEmail);
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(personel.DisplayName)
+                || !string.Equals(personel.DisplayName, PersonelDisplayName, StringComparison.Ordinal))
+            {
+                personel.SetDisplayName(PersonelDisplayName);
+                changed = true;
+            }
+        }
+
+        var demoCitizen = await db.Citizens.FirstOrDefaultAsync(
+                               c => c.AdSoyad == SharedCitizenCatalog.DemoVatandasAdSoyad,
+                               cancellationToken)
+                           ?? await db.Citizens.FirstAsync(cancellationToken);
+
+        var vatandas = await db.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Vatandas, cancellationToken);
+        if (vatandas is null)
+        {
+            vatandas = ApplicationUser.CreateVatandas(
+                demoCitizen.TcNo,
+                demoCitizen.AdSoyad,
+                hasher.HashPassword(probe, VatandasPassword),
+                demoCitizen.Id);
+            await db.Users.AddAsync(vatandas, cancellationToken);
+            changed = true;
+        }
+        else
+        {
+            if (!string.Equals(vatandas.Username, demoCitizen.TcNo, StringComparison.Ordinal))
+            {
+                vatandas.SetLoginIdentifier(demoCitizen.TcNo);
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(vatandas.DisplayName)
+                || !string.Equals(vatandas.DisplayName, demoCitizen.AdSoyad, StringComparison.Ordinal))
+            {
+                vatandas.SetDisplayName(demoCitizen.AdSoyad);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Giriş hesapları güncellendi → {Email} / TC {Tc}", PersonelEmail, demoCitizen.TcNo);
+        }
     }
 }

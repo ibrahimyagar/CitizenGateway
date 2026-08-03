@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using CitizenGateway.Application.DTOs;
+using CitizenGateway.Contracts.Auth;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -26,8 +26,7 @@ public sealed class JwtTokenService
             new(GatewayClaimTypes.UserId, user.UserId.ToString()),
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new(ClaimTypes.Name, user.Username),
-            // Role claim: [Authorize(Roles = "Personel")] ile birebir eşleşir.
+            new(ClaimTypes.Name, user.DisplayName),
             new(ClaimTypes.Role, user.Role.ToString())
         };
 

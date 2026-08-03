@@ -5,12 +5,23 @@ POST {{CitizenGateway.Api_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "username": "personel",
+  "portal": "Personel",
+  "identifier": "aylin.kara@ornekkoy.bel.tr",
   "password": "Personel123!"
 }
 
+### Login (Vatandaş)
+POST {{CitizenGateway.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "portal": "Vatandas",
+  "identifier": "71151275166",
+  "password": "Vatandas123!"
+}
+
 ### Summary (Bearer token gerekli)
-GET {{CitizenGateway.Api_HostAddress}}/api/citizen/71151275166/summary
+GET {{CitizenGateway.Api_HostAddress}}/api/citizens/71151275166/summary
 Authorization: Bearer {{token}}
 
 ### Health

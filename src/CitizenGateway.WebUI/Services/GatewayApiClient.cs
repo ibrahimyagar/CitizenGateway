@@ -2,19 +2,26 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using CitizenGateway.Contracts.Audit;
+using CitizenGateway.Contracts.Auth;
+using CitizenGateway.Contracts.Citizens;
+using CitizenGateway.Contracts.Health;
+using CitizenGateway.Contracts.Requests;
+using CitizenGateway.Domain.Enums;
 using Microsoft.Extensions.Options;
 
 namespace CitizenGateway.WebUI.Services;
 
 /// <summary>
 /// Gateway HTTP istemcisi — oturumdaki JWT ile çağrı yapar.
-/// Login ayrıdır; sabit personel hesabına bağımlı değildir.
 /// </summary>
 public sealed class GatewayApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     private readonly HttpClient _http;
@@ -31,64 +38,102 @@ public sealed class GatewayApiClient
         _http.Timeout = TimeSpan.FromSeconds(20);
     }
 
-    public async Task<LoginResponse> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
+    public async Task<LoginResponseDto> LoginAsync(
+        LoginPortal portal,
+        string identifier,
+        string password,
+        CancellationToken cancellationToken = default)
     {
-        using var response = await _http.PostAsJsonAsync("api/auth/login", new { username, password }, cancellationToken);
+        using var response = await _http.PostAsJsonAsync(
+            "api/auth/login",
+            new LoginRequestDto(portal, identifier, password),
+            JsonOptions,
+            cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(ExtractError(body, (int)response.StatusCode));
 
-        return JsonSerializer.Deserialize<LoginResponse>(body, JsonOptions)
+        return JsonSerializer.Deserialize<LoginResponseDto>(body, JsonOptions)
             ?? throw new InvalidOperationException("Login yanıtı parse edilemedi.");
     }
 
-    public Task<CitizenSummaryViewModel> GetSummaryAsync(string tcNo, CancellationToken cancellationToken = default) =>
-        GetAsync<CitizenSummaryViewModel>($"api/citizen/{tcNo}/summary", cancellationToken);
+    public Task<CitizenSummaryDto> GetSummaryAsync(string tcNo, CancellationToken cancellationToken = default) =>
+        GetAsync<CitizenSummaryDto>($"api/citizens/{tcNo}/summary", cancellationToken);
 
-    public Task<IReadOnlyList<CitizenListItem>> ListCitizensAsync(CancellationToken cancellationToken = default) =>
-        GetAsync<IReadOnlyList<CitizenListItem>>("api/citizens", cancellationToken);
+    public Task<IReadOnlyList<CitizenListItemDto>> ListCitizensAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<CitizenListItemDto>>("api/citizens", cancellationToken);
 
-    public Task<IReadOnlyList<ServiceRequestItem>> GetRequestsAsync(string tcNo, CancellationToken cancellationToken = default) =>
-        GetAsync<IReadOnlyList<ServiceRequestItem>>($"api/citizen/{tcNo}/requests", cancellationToken);
+    public Task<IReadOnlyList<ServiceRequestDto>> GetRequestsAsync(string tcNo, CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<ServiceRequestDto>>($"api/citizens/{tcNo}/requests", cancellationToken);
 
-    public async Task<ServiceRequestItem> CreateRequestAsync(string tcNo, string requestType, CancellationToken cancellationToken = default)
+    public async Task<ServiceRequestDto> CreateRequestAsync(
+        string tcNo,
+        RequestType requestType,
+        CancellationToken cancellationToken = default)
     {
-        // API enum bekliyor; sayısal veya isim — isim gönderiyoruz.
-        using var request = CreateAuthorizedRequest(HttpMethod.Post, $"api/citizen/{tcNo}/requests");
-        request.Content = JsonContent.Create(new { requestType });
+        using var request = CreateAuthorizedRequest(HttpMethod.Post, $"api/citizens/{tcNo}/requests");
+        request.Content = JsonContent.Create(new CreateServiceRequestDto(requestType), options: JsonOptions);
 
         using var response = await _http.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(ExtractError(body, (int)response.StatusCode));
 
-        return JsonSerializer.Deserialize<ServiceRequestItem>(body, JsonOptions)
+        return JsonSerializer.Deserialize<ServiceRequestDto>(body, JsonOptions)
             ?? throw new InvalidOperationException("Talep yanıtı parse edilemedi.");
     }
 
-    public Task<IReadOnlyList<AuditLogItem>> GetAuditLogsAsync(CancellationToken cancellationToken = default) =>
-        GetAsync<IReadOnlyList<AuditLogItem>>("api/audit-logs?take=50", cancellationToken);
+    public Task<IReadOnlyList<AuditLogDto>> GetAuditLogsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<AuditLogDto>>("api/audit-logs?take=50", cancellationToken);
 
-    public async Task<HealthStatus> GetHealthAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<ServiceRequestDto>> ListServiceRequestsAsync(
+        RequestStatus? status,
+        CancellationToken cancellationToken = default)
+    {
+        var path = status is null
+            ? "api/service-requests?take=50"
+            : $"api/service-requests?status={status}&take=50";
+        return GetAsync<IReadOnlyList<ServiceRequestDto>>(path, cancellationToken);
+    }
+
+    public Task<ServiceRequestDto> ApproveRequestAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendEmptyAsync<ServiceRequestDto>(HttpMethod.Post, $"api/service-requests/{id}/approve", cancellationToken);
+
+    public Task<ServiceRequestDto> RejectRequestAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendEmptyAsync<ServiceRequestDto>(HttpMethod.Post, $"api/service-requests/{id}/reject", cancellationToken);
+
+    public async Task<GatewayHealthDto> GetHealthAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             using var response = await _http.GetAsync("health", cancellationToken);
             if (!response.IsSuccessStatusCode)
-                return new HealthStatus { Status = "Unreachable" };
+                return new GatewayHealthDto { Status = "Unreachable" };
 
-            return await response.Content.ReadFromJsonAsync<HealthStatus>(JsonOptions, cancellationToken)
-                ?? new HealthStatus { Status = "Unknown" };
+            return await response.Content.ReadFromJsonAsync<GatewayHealthDto>(JsonOptions, cancellationToken)
+                ?? new GatewayHealthDto { Status = "Unknown" };
         }
         catch
         {
-            return new HealthStatus { Status = "Unreachable" };
+            return new GatewayHealthDto { Status = "Unreachable" };
         }
     }
 
     private async Task<T> GetAsync<T>(string path, CancellationToken cancellationToken)
     {
         using var request = CreateAuthorizedRequest(HttpMethod.Get, path);
+        using var response = await _http.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(ExtractError(body, (int)response.StatusCode));
+
+        return JsonSerializer.Deserialize<T>(body, JsonOptions)
+            ?? throw new InvalidOperationException("Yanıt parse edilemedi.");
+    }
+
+    private async Task<T> SendEmptyAsync<T>(HttpMethod method, string path, CancellationToken cancellationToken)
+    {
+        using var request = CreateAuthorizedRequest(method, path);
         using var response = await _http.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)

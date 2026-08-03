@@ -1,0 +1,30 @@
+@model IndexModel
+
+<div class="cg-card cg-card-pad">
+    <form method="post" asp-page-handler="Query" class="cg-toolbar">
+        @if (Model.IsPersonel && Model.CitizenOptions.Count > 0)
+        {
+            <div class="cg-field">
+                <label for="TcNo">Vatandaş</label>
+                <select asp-for="TcNo" asp-items="Model.CitizenOptions" class="form-select" id="TcNo"></select>
+            </div>
+        }
+        else
+        {
+            <div class="cg-field">
+                <label asp-for="TcNo">T.C. Kimlik No</label>
+                @if (Model.IsPersonel)
+                {
+                    <input asp-for="TcNo" class="form-control" maxlength="11" />
+                }
+                else
+                {
+                    <input asp-for="TcNo" class="form-control" maxlength="11" readonly />
+                }
+            </div>
+        }
+        <div class="cg-actions">
+            <button type="submit" class="btn btn-primary">Sorgula</button>
+        </div>
+    </form>
+</div>

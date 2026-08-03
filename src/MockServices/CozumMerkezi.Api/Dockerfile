@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+COPY Directory.Build.props ./
 COPY src/MockServices/MockServices.Shared/MockServices.Shared.csproj src/MockServices/MockServices.Shared/
 COPY src/MockServices/CozumMerkezi.Api/CozumMerkezi.Api.csproj src/MockServices/CozumMerkezi.Api/
 RUN dotnet restore src/MockServices/CozumMerkezi.Api/CozumMerkezi.Api.csproj

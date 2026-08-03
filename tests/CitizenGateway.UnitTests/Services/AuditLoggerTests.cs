@@ -1,5 +1,5 @@
 using CitizenGateway.Application.Abstractions;
-using CitizenGateway.Application.Services;
+using CitizenGateway.Application.Features.Audit;
 using CitizenGateway.Domain.Entities;
 using CitizenGateway.Domain.Enums;
 using FluentAssertions;
@@ -25,7 +25,7 @@ public sealed class AuditLoggerTests
             userId,
             UserRole.Personel,
             TestData.ValidTc1,
-            "GET /api/citizen/71151275166/summary",
+            "GET /api/citizens/71151275166/summary",
             "127.0.0.1");
 
         repo.Verify(
@@ -36,7 +36,7 @@ public sealed class AuditLoggerTests
         captured!.UserId.Should().Be(userId);
         captured.UserRole.Should().Be(UserRole.Personel);
         captured.AccessedCitizenTcNo.Should().Be(TestData.ValidTc1);
-        captured.AccessedEndpoint.Should().Be("GET /api/citizen/71151275166/summary");
+        captured.AccessedEndpoint.Should().Be("GET /api/citizens/71151275166/summary");
         captured.IpAddress.Should().Be("127.0.0.1");
         captured.Timestamp.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
     }

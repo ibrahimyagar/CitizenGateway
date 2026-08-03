@@ -1,0 +1,64 @@
+@model IndexModel
+@using CitizenGateway.Domain.Enums
+@using CitizenGateway.WebUI.Services
+
+<div class="cg-split">
+    <div class="cg-card">
+        <div class="cg-card-head">
+            <h2>Yeni talep</h2>
+        </div>
+        <div class="cg-card-pad">
+            <form method="post" asp-page-handler="CreateRequest" class="vstack gap-3">
+                <input type="hidden" asp-for="TcNo" />
+                <div>
+                    <label asp-for="NewRequestType" class="form-label text-muted small fw-semibold">Tür</label>
+                    <select asp-for="NewRequestType" class="form-select">
+                        <option value="@RequestType.KursKaydi">@DemoLabels.ForRequestType(RequestType.KursKaydi)</option>
+                        <option value="@RequestType.RandevuTalebi">@DemoLabels.ForRequestType(RequestType.RandevuTalebi)</option>
+                        <option value="@RequestType.SikayetAcma">@DemoLabels.ForRequestType(RequestType.SikayetAcma)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline-primary w-100">Gönder</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="cg-card">
+        <div class="cg-card-head">
+            <h2>Talep geçmişi</h2>
+            <span>Gateway kayıtları</span>
+        </div>
+        @if (Model.Requests.Count == 0)
+        {
+            <div class="cg-card-pad">
+                <p class="cg-empty">Bu vatandaş için Gateway talebi yok.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="cg-table">
+                    <thead>
+                        <tr>
+                            <th>Talep</th>
+                            <th>Birim</th>
+                            <th>Durum</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var r in Model.Requests)
+                    {
+                        <tr>
+                            <td>@DemoLabels.ForRequestType(r.RequestType)</td>
+                            <td>@DemoLabels.ForTargetService(r.TargetService)</td>
+                            <td><span class="cg-pill @DemoLabels.StatusPillClass(r.Status)">@DemoLabels.ForRequestStatus(r.Status)</span></td>
+                            <td>@r.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

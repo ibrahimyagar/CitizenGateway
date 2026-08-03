@@ -1,7 +1,7 @@
 using CitizenGateway.Application.Abstractions;
-using CitizenGateway.Application.DTOs;
-using CitizenGateway.Application.DTOs.External;
-using CitizenGateway.Application.Services;
+using CitizenGateway.Application.Features.Requests;
+using CitizenGateway.Contracts.External;
+using CitizenGateway.Contracts.Requests;
 using CitizenGateway.Domain.Entities;
 using CitizenGateway.Domain.Enums;
 using CitizenGateway.Domain.Exceptions;
@@ -98,4 +98,41 @@ public sealed class ServiceRequestServiceTests
         result.TargetService.Should().Be(TargetService.Kutuphane);
         _requests.Verify(r => r.AddAsync(It.IsAny<ServiceRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task ApproveAsync_WhenPending_SetsOnaylandi()
+    {
+        var citizen = TestData.CreateCitizen();
+        var request = ServiceRequest.Create(citizen.Id, RequestType.KursKaydi, TargetService.SporTesisi);
+
+        _requests.Setup(r => r.GetByIdAsync(request.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+        _requests.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _sut.ApproveAsync(request.Id);
+
+        result.Status.Should().Be(RequestStatus.Onaylandi);
+        _requests.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RejectAsync_WhenAlreadyDecided_Throws()
+    {
+        var citizen = TestData.CreateCitizen();
+        var request = ServiceRequest.Create(
+            citizen.Id,
+            RequestType.KursKaydi,
+            TargetService.SporTesisi,
+            RequestStatus.Onaylandi);
+
+        _requests.Setup(r => r.GetByIdAsync(request.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        var act = async () => await _sut.RejectAsync(request.Id);
+
+        await act.Should().ThrowAsync<DomainValidationException>()
+            .WithMessage("*bekleyen*");
+    }
 }
+

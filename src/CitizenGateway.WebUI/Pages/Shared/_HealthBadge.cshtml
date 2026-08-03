@@ -1,0 +1,10 @@
+@model CitizenGateway.Contracts.Health.GatewayHealthDto
+@{
+    var (css, text) = Model.Status switch
+    {
+        "Healthy" => ("cg-pill-ok", "Sistemler hazır"),
+        "Degraded" => ("cg-pill-warn", "Kısmi kesinti"),
+        _ => ("cg-pill-bad", "Bağlantı yok")
+    };
+}
+<span class="cg-pill @css" title="@Model.Status">@text</span>

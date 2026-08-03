@@ -1,5 +1,5 @@
-using CitizenGateway.Application.DTOs;
-using CitizenGateway.Application.Services;
+using CitizenGateway.Application.Features.Audit;
+using CitizenGateway.Contracts.Audit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,11 +10,10 @@ namespace CitizenGateway.Api.Controllers;
 [Route("api/audit-logs")]
 public sealed class AuditLogsController : ControllerBase
 {
-    private readonly AuditQueryService _auditQuery;
+    private readonly IAuditQueryService _auditQuery;
 
-    public AuditLogsController(AuditQueryService auditQuery) => _auditQuery = auditQuery;
+    public AuditLogsController(IAuditQueryService auditQuery) => _auditQuery = auditQuery;
 
-    /// <summary>Sadece Personel — kim hangi vatandaş verisine baktı.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<AuditLogDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetLatest(

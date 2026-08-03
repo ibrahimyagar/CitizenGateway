@@ -1,4 +1,4 @@
-using CitizenGateway.Application.DTOs.External;
+using CitizenGateway.Contracts.External;
 
 namespace CitizenGateway.Application.Abstractions;
 

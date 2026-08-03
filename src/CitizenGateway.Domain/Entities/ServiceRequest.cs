@@ -1,4 +1,5 @@
 using CitizenGateway.Domain.Enums;
+using CitizenGateway.Domain.Exceptions;
 
 namespace CitizenGateway.Domain.Entities;
 
@@ -15,7 +16,6 @@ public class ServiceRequest
     public DateTimeOffset CreatedAt { get; private set; }
     public TargetService TargetService { get; private set; }
 
-    // Navigasyon — sorgularda Include kolaylığı; zorunlu değil.
     public Citizen? Citizen { get; private set; }
 
     private ServiceRequest()
@@ -42,6 +42,21 @@ public class ServiceRequest
         };
     }
 
-    public void Approve() => Status = RequestStatus.Onaylandi;
-    public void Reject() => Status = RequestStatus.Reddedildi;
+    public void Approve()
+    {
+        EnsurePending();
+        Status = RequestStatus.Onaylandi;
+    }
+
+    public void Reject()
+    {
+        EnsurePending();
+        Status = RequestStatus.Reddedildi;
+    }
+
+    private void EnsurePending()
+    {
+        if (Status != RequestStatus.Beklemede)
+            throw new DomainValidationException("Yalnızca bekleyen talepler kararlaştırılabilir.");
+    }
 }

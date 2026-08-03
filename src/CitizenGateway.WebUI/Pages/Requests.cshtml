@@ -1,0 +1,88 @@
+@page
+@model RequestsModel
+@using CitizenGateway.Domain.Enums
+@using CitizenGateway.WebUI.Services
+@{
+    ViewData["Title"] = "Talepler";
+}
+
+<header class="cg-page-head">
+    <div>
+        <h1>Talep kutusu</h1>
+        <p>Bekleyen talepleri ilgili birim adına onaylayın veya reddedin</p>
+    </div>
+</header>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+
+<div class="cg-card">
+    <div class="cg-filters">
+        <a class="cg-filter @(Model.Filter == "pending" ? "is-active" : "")" asp-page="/Requests" asp-route-filter="pending">Bekleyen</a>
+        <a class="cg-filter @(Model.Filter == "approved" ? "is-active" : "")" asp-page="/Requests" asp-route-filter="approved">Onaylı</a>
+        <a class="cg-filter @(Model.Filter == "rejected" ? "is-active" : "")" asp-page="/Requests" asp-route-filter="rejected">Red</a>
+        <a class="cg-filter @(Model.Filter == "all" ? "is-active" : "")" asp-page="/Requests" asp-route-filter="all">Tümü</a>
+    </div>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="cg-card-pad">
+            <p class="cg-empty">
+                @(Model.Filter == "pending" ? "Bekleyen talep yok." : "Bu görünümde kayıt yok.")
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="cg-table">
+                <thead>
+                    <tr>
+                        <th>Vatandaş</th>
+                        <th>Talep</th>
+                        <th>Birim</th>
+                        <th>Durum</th>
+                        <th>Tarih</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@(item.AdSoyad ?? "—")</div>
+                            <code class="small text-muted">@item.TcNo</code>
+                        </td>
+                        <td>@DemoLabels.ForRequestType(item.RequestType)</td>
+                        <td>@DemoLabels.ForTargetService(item.TargetService)</td>
+                        <td><span class="cg-pill @DemoLabels.StatusPillClass(item.Status)">@DemoLabels.ForRequestStatus(item.Status)</span></td>
+                        <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        <td class="text-end text-nowrap">
+                            @if (item.Status == RequestStatus.Beklemede)
+                            {
+                                <form method="post" asp-page-handler="Approve" class="d-inline">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <input type="hidden" name="filter" value="@Model.Filter" />
+                                    <button type="submit" class="btn btn-sm btn-primary">Onayla</button>
+                                </form>
+                                <form method="post" asp-page-handler="Reject" class="d-inline ms-1">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <input type="hidden" name="filter" value="@Model.Filter" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Reddet</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

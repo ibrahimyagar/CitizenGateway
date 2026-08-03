@@ -1,0 +1,106 @@
+@using CitizenGateway.WebUI.Services
+@model CitizenGateway.Contracts.Citizens.CitizenSummaryDto
+
+<div class="cg-identity">
+    <div>
+        <strong>@Model.AdSoyad</strong>
+        <span class="ms-2"><code>@Model.TcNo</code></span>
+    </div>
+    <div class="cg-meta">
+        @if (Model.PartialFailure)
+        {
+            <span class="cg-pill cg-pill-warn">
+                Eksik: @string.Join(", ", Model.FailedServices.Select(DemoLabels.FailedService))
+            </span>
+        }
+        else
+        {
+            <span class="cg-pill cg-pill-ok">Tüm birimler yanıt verdi</span>
+        }
+    </div>
+</div>
+
+<div class="cg-modules">
+    <section class="cg-module">
+        <div class="cg-module-label">Birim</div>
+        <h3>Spor Tesisi</h3>
+        @if (Model.SporTesisi is null)
+        {
+            <p class="cg-empty">Kayıt yok</p>
+        }
+        else
+        {
+            var s = Model.SporTesisi;
+            <div class="cg-stat-row"><span>Tesis</span><strong>@s.TesisAdi</strong></div>
+            <div class="cg-stat-row">
+                <span>Üyelik</span>
+                <strong>
+                    @if (s.UyelikAktif)
+                    {
+                        <span class="cg-pill cg-pill-ok">Aktif</span>
+                    }
+                    else
+                    {
+                        <span class="cg-pill cg-pill-neutral">Pasif</span>
+                    }
+                </strong>
+            </div>
+            <div class="cg-stat-row"><span>Kontör</span><strong>@s.KontorBakiye</strong></div>
+            <div class="cg-stat-row"><span>Bitiş</span><strong>@s.UyelikBitisTarihi.ToString("dd.MM.yyyy")</strong></div>
+        }
+    </section>
+
+    <section class="cg-module">
+        <div class="cg-module-label">Birim</div>
+        <h3>Kütüphane</h3>
+        @if (Model.Kutuphane is null)
+        {
+            <p class="cg-empty">Kayıt yok</p>
+        }
+        else
+        {
+            var k = Model.Kutuphane;
+            <div class="cg-stat-row"><span>Aktif ödünç</span><strong>@k.AktifOduncSayisi</strong></div>
+            @if (k.Randevular.Count > 0)
+            {
+                <ul class="cg-feed">
+                    @foreach (var r in k.Randevular.Take(3))
+                    {
+                        <li>
+                            <strong>@r.Tarih.ToString("dd.MM.yyyy")</strong>
+                            · @r.Salon · @r.Konu
+                            <span class="cg-pill cg-pill-neutral ms-1">@r.Durum</span>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    </section>
+
+    <section class="cg-module">
+        <div class="cg-module-label">Birim</div>
+        <h3>Çözüm Merkezi</h3>
+        @if (Model.CozumMerkezi is null)
+        {
+            <p class="cg-empty">Kayıt yok</p>
+        }
+        else
+        {
+            var c = Model.CozumMerkezi;
+            <div class="cg-stat-row"><span>Açık / incelemede</span><strong>@c.AcikTalepSayisi</strong></div>
+            @if (c.Talepler.Count > 0)
+            {
+                <ul class="cg-feed">
+                    @foreach (var t in c.Talepler.Take(3))
+                    {
+                        <li>
+                            <strong>@t.TalepNo</strong>
+                            · @t.Konu · @t.Kategori
+                            <span class="cg-pill cg-pill-neutral ms-1">@t.Durum</span>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    </section>
+</div>

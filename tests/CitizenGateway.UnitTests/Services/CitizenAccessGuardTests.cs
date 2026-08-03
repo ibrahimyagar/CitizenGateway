@@ -1,4 +1,4 @@
-using CitizenGateway.Application.Services;
+using CitizenGateway.Application.Features.Citizens;
 using CitizenGateway.Domain.Enums;
 using CitizenGateway.Domain.Exceptions;
 using FluentAssertions;

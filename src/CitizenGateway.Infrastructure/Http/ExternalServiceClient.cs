@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CitizenGateway.Application.Abstractions;
-using CitizenGateway.Application.DTOs.External;
+using CitizenGateway.Contracts.External;
 using Microsoft.Extensions.Logging;
 
 namespace CitizenGateway.Infrastructure.Http;

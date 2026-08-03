@@ -1,5 +1,5 @@
 using CitizenGateway.Application.Abstractions;
-using CitizenGateway.Application.DTOs.External;
+using CitizenGateway.Contracts.External;
 
 namespace CitizenGateway.IntegrationTests.Support;
 

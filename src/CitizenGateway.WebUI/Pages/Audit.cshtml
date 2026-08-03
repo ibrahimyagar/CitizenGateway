@@ -1,39 +1,54 @@
 @page
 @model AuditModel
 @{
-    ViewData["Title"] = "Audit Logları";
+    ViewData["Title"] = "Denetim";
 }
 
-<h1 class="h3 mb-3">Audit logları</h1>
-<p class="text-muted">Kim, ne zaman, hangi vatandaş verisine baktı? (Personel)</p>
+<header class="cg-page-head">
+    <div>
+        <h1>Denetim kayıtları</h1>
+        <p>Vatandaş verisine erişim ve talep kararlarının izleri</p>
+    </div>
+</header>
 
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
     <div class="alert alert-danger">@Model.ErrorMessage</div>
 }
 
-<div class="table-responsive">
-    <table class="table table-sm table-striped">
-        <thead>
-            <tr>
-                <th>Zaman</th>
-                <th>Rol</th>
-                <th>TC</th>
-                <th>Endpoint</th>
-                <th>IP</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var log in Model.Logs)
-        {
-            <tr>
-                <td>@log.Timestamp.ToLocalTime().ToString("g")</td>
-                <td>@log.UserRole</td>
-                <td>@log.AccessedCitizenTcNo</td>
-                <td><code>@log.AccessedEndpoint</code></td>
-                <td>@log.IpAddress</td>
-            </tr>
-        }
-        </tbody>
-    </table>
+<div class="cg-card">
+    @if (Model.Logs.Count == 0)
+    {
+        <div class="cg-card-pad">
+            <p class="cg-empty">Henüz kayıt yok.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="cg-table">
+                <thead>
+                    <tr>
+                        <th>Zaman</th>
+                        <th>Rol</th>
+                        <th>TC</th>
+                        <th>İşlem</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var log in Model.Logs)
+                {
+                    <tr>
+                        <td>@log.Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        <td><span class="cg-pill cg-pill-neutral">@(log.UserRole.ToString() == "Personel" ? "Personel" : "Vatandaş")</span></td>
+                        <td><code>@log.AccessedCitizenTcNo</code></td>
+                        <td><code class="small">@log.AccessedEndpoint</code></td>
+                        <td>@log.IpAddress</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>

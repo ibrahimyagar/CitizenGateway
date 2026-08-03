@@ -1,35 +1,159 @@
 @page
 @model LoginModel
+@using CitizenGateway.Domain.Enums
+@using CitizenGateway.WebUI.Services
 @{
-    ViewData["Title"] = "Giriş";
-    Layout = "_Layout";
+    ViewData["Title"] = "Oturum aç";
+    Layout = "_AuthLayout";
+    var isPersonel = Model.Portal == LoginPortal.Personel;
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <h1 class="h3 mb-2">Giriş</h1>
-        <p class="text-muted">SENTETİK DEMO — gerçek kimlik verisi yoktur.</p>
-
-        <div class="alert alert-light border small">
-            <div><strong>personel</strong> / Personel123! — tüm vatandaşlar</div>
-            <div><strong>vatandas</strong> / Vatandas123! — yalnızca kendi TC</div>
+<div class="cg-gate">
+    <aside class="cg-gate-brand" aria-label="Kurum bilgisi">
+        <div class="cg-gate-brand-inner">
+            <div class="cg-gate-mark" aria-hidden="true">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
+                    <path d="M24 10L34 16.5V31.5L24 38L14 31.5V16.5L24 10Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+                    <path d="M24 18V30M18.5 21.5H29.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <p class="cg-gate-org">Örnekköy Belediyesi</p>
+            <h1 class="cg-gate-product">CitizenGateway</h1>
+            <p class="cg-gate-tagline">
+                Personel kurumsal e-posta ile, vatandaş T.C. kimlik numarası ile güvenli oturum açar.
+            </p>
+            <ul class="cg-gate-points">
+                <li>Kurumsal e-posta ile personel erişimi</li>
+                <li>T.C. kimlik ile vatandaş erişimi</li>
+                <li>Rol tabanlı yetki ve denetim</li>
+            </ul>
         </div>
+        <p class="cg-gate-foot">Kurumsal erişim kapısı</p>
+    </aside>
 
-        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-        {
-            <div class="alert alert-danger">@Model.ErrorMessage</div>
-        }
+    <section class="cg-gate-panel">
+        <div class="cg-gate-panel-inner">
+            <header class="cg-gate-panel-head">
+                <h2>Oturum aç</h2>
+                <p>Giriş türünü seçin, kimlik bilgilerinizi girin.</p>
+            </header>
 
-        <form method="post" class="vstack gap-3">
-            <div>
-                <label asp-for="Username" class="form-label">Kullanıcı adı</label>
-                <input asp-for="Username" class="form-control" autocomplete="username" />
-            </div>
-            <div>
-                <label asp-for="Password" class="form-label">Şifre</label>
-                <input asp-for="Password" class="form-control" autocomplete="current-password" />
-            </div>
-            <button type="submit" class="btn btn-primary">Giriş yap</button>
-        </form>
-    </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+            }
+
+            <form method="post" class="cg-gate-form" id="loginForm" novalidate>
+                <div class="cg-gate-portals" role="radiogroup" aria-label="Giriş türü">
+                    <label class="cg-gate-portal @(isPersonel ? "is-active" : "")">
+                        <input type="radio" asp-for="Portal" value="@LoginPortal.Personel" />
+                        <span>Personel</span>
+                        <small>Kurumsal e-posta</small>
+                    </label>
+                    <label class="cg-gate-portal @(!isPersonel ? "is-active" : "")">
+                        <input type="radio" asp-for="Portal" value="@LoginPortal.Vatandas" />
+                        <span>Vatandaş</span>
+                        <small>T.C. kimlik no</small>
+                    </label>
+                </div>
+
+                <div class="cg-gate-field">
+                    <label asp-for="Identifier" id="identifierLabel">@(isPersonel ? "Kurumsal e-posta" : "T.C. Kimlik No")</label>
+                    <input asp-for="Identifier"
+                           class="form-control"
+                           id="Identifier"
+                           autocomplete="username"
+                           autofocus
+                           placeholder="@(isPersonel ? "ad.soyad@ornekkoy.bel.tr" : "11 haneli T.C. kimlik no")"
+                           inputmode="@(isPersonel ? "email" : "numeric")"
+                           maxlength="@(isPersonel ? 128 : 11)" />
+                    <span asp-validation-for="Identifier" class="text-danger small"></span>
+                </div>
+
+                <div class="cg-gate-field">
+                    <label asp-for="Password">Şifre</label>
+                    <input asp-for="Password"
+                           class="form-control"
+                           autocomplete="current-password"
+                           placeholder="••••••••" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary cg-gate-submit">Oturum aç</button>
+            </form>
+
+            <details class="cg-gate-demo">
+                <summary>Değerlendirme hesapları</summary>
+                <div class="cg-gate-demo-body">
+                    <p>Sentetik demo — gerçek kimlik verisi yoktur.</p>
+                    <dl>
+                        <div>
+                            <dt>Personel</dt>
+                            <dd><code>@DemoAccounts.PersonelEmail</code> · <code>@DemoAccounts.PersonelPassword</code></dd>
+                        </div>
+                        <div>
+                            <dt>Vatandaş (@DemoAccounts.VatandasDisplayName)</dt>
+                            <dd><code>@DemoAccounts.VatandasTcNo</code> · <code>@DemoAccounts.VatandasPassword</code></dd>
+                        </div>
+                    </dl>
+                    <div class="cg-gate-demo-actions">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-portal="Personel"
+                                data-id="@DemoAccounts.PersonelEmail"
+                                data-pass="@DemoAccounts.PersonelPassword">Personel doldur</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-portal="Vatandas"
+                                data-id="@DemoAccounts.VatandasTcNo"
+                                data-pass="@DemoAccounts.VatandasPassword">Vatandaş doldur</button>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </section>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('loginForm');
+            var label = document.getElementById('identifierLabel');
+            var input = document.getElementById('Identifier');
+            var portals = document.querySelectorAll('.cg-gate-portal');
+
+            function syncPortalUi() {
+                var selected = form.querySelector('input[name="Portal"]:checked');
+                var isPersonel = selected && selected.value === 'Personel';
+                portals.forEach(function (el) {
+                    var radio = el.querySelector('input');
+                    el.classList.toggle('is-active', radio && radio.checked);
+                });
+                if (label) label.textContent = isPersonel ? 'Kurumsal e-posta' : 'T.C. Kimlik No';
+                if (input) {
+                    input.placeholder = isPersonel ? 'ad.soyad@ornekkoy.bel.tr' : '11 haneli T.C. kimlik no';
+                    input.inputMode = isPersonel ? 'email' : 'numeric';
+                    input.maxLength = isPersonel ? 128 : 11;
+                }
+            }
+
+            form.querySelectorAll('input[name="Portal"]').forEach(function (r) {
+                r.addEventListener('change', syncPortalUi);
+            });
+
+            document.querySelectorAll('[data-portal]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var portal = btn.getAttribute('data-portal');
+                    var radio = form.querySelector('input[name="Portal"][value="' + portal + '"]');
+                    if (radio) { radio.checked = true; }
+                    if (input) input.value = btn.getAttribute('data-id') || '';
+                    var pass = document.getElementById('Password');
+                    if (pass) pass.value = btn.getAttribute('data-pass') || '';
+                    syncPortalUi();
+                    if (input) input.focus();
+                });
+            });
+
+            syncPortalUi();
+        })();
+    </script>
+}

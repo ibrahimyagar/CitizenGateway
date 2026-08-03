@@ -3,7 +3,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY CitizenGateway.sln ./
+COPY Directory.Build.props ./
 COPY src/CitizenGateway.Domain/CitizenGateway.Domain.csproj src/CitizenGateway.Domain/
+COPY src/CitizenGateway.Contracts/CitizenGateway.Contracts.csproj src/CitizenGateway.Contracts/
 COPY src/CitizenGateway.Application/CitizenGateway.Application.csproj src/CitizenGateway.Application/
 COPY src/CitizenGateway.Infrastructure/CitizenGateway.Infrastructure.csproj src/CitizenGateway.Infrastructure/
 COPY src/CitizenGateway.Api/CitizenGateway.Api.csproj src/CitizenGateway.Api/
@@ -12,6 +14,7 @@ COPY src/MockServices/MockServices.Shared/MockServices.Shared.csproj src/MockSer
 RUN dotnet restore src/CitizenGateway.Api/CitizenGateway.Api.csproj
 
 COPY src/CitizenGateway.Domain/ src/CitizenGateway.Domain/
+COPY src/CitizenGateway.Contracts/ src/CitizenGateway.Contracts/
 COPY src/CitizenGateway.Application/ src/CitizenGateway.Application/
 COPY src/CitizenGateway.Infrastructure/ src/CitizenGateway.Infrastructure/
 COPY src/CitizenGateway.Api/ src/CitizenGateway.Api/

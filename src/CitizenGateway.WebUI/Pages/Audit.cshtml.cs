@@ -1,3 +1,4 @@
+using CitizenGateway.Contracts.Audit;
 using CitizenGateway.WebUI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,7 +12,7 @@ public sealed class AuditModel : PageModel
 
     public AuditModel(GatewayApiClient gateway) => _gateway = gateway;
 
-    public IReadOnlyList<AuditLogItem> Logs { get; private set; } = [];
+    public IReadOnlyList<AuditLogDto> Logs { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)

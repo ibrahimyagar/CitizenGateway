@@ -1,28 +1,37 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var path = ViewContext.HttpContext.Request.Path.Value ?? "";
+    bool Active(string page) => path.Equals(page, StringComparison.OrdinalIgnoreCase)
+        || path.Equals(page + "/", StringComparison.OrdinalIgnoreCase);
+}
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Örnekköy Gateway</title>
+    <title>@ViewData["Title"] · Örnekköy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header class="border-bottom mb-4">
-        <div class="container py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <div>
-                <a class="text-decoration-none text-dark fw-semibold" asp-page="/Index">CitizenGateway</a>
-                <span class="text-muted small ms-2">sentetik demo</span>
-            </div>
-            <nav class="d-flex align-items-center gap-3">
+    <header class="cg-header">
+        <div class="cg-header-inner">
+            <a class="cg-brand" asp-page="/Index">
+                <span class="cg-brand-name">Örnekköy Gateway</span>
+                <span class="cg-brand-meta">Vatandaş servis entegrasyonu</span>
+            </a>
+            <nav class="cg-nav">
                 @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <a class="text-decoration-none" asp-page="/Index">Özet</a>
+                    <a class="cg-nav-link @(Active("/") || Active("/Index") ? "is-active" : "")" asp-page="/Index">Özet</a>
                     @if (User.IsInRole("Personel"))
                     {
-                        <a class="text-decoration-none" asp-page="/Audit">Audit</a>
+                        <a class="cg-nav-link @(Active("/Requests") ? "is-active" : "")" asp-page="/Requests">Talepler</a>
+                        <a class="cg-nav-link @(Active("/Audit") ? "is-active" : "")" asp-page="/Audit">Denetim</a>
                     }
-                    <span class="text-muted small">@User.Identity?.Name</span>
+                    <span class="cg-nav-user">@User.Identity?.Name</span>
                     <form method="post" asp-page="/Logout" class="d-inline">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">Çıkış</button>
                     </form>
@@ -30,9 +39,9 @@
             </nav>
         </div>
     </header>
-    <div class="container pb-5">
+    <main class="cg-shell">
         @RenderBody()
-    </div>
+    </main>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)

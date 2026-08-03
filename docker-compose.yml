@@ -89,10 +89,8 @@ services:
       - gateway
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      # WebUI sunucu tarafı HttpClient → gateway container.
+      # WebUI sunucu tarafı HttpClient → gateway container (auth cookie + JWT claim).
       Gateway__BaseUrl: http://gateway:8080
-      Gateway__Username: personel
-      Gateway__Password: Personel123!
     ports:
       - "5104:8080"
 

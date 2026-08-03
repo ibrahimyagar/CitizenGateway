@@ -15,6 +15,7 @@ builder.Services.AddRazorPages(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<GatewayOptions>(builder.Configuration.GetSection(GatewayOptions.SectionName));
 builder.Services.AddHttpClient<GatewayApiClient>();
+builder.Services.AddScoped<CitizenWorkspaceLoader>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

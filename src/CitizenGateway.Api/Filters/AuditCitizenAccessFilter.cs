@@ -1,5 +1,5 @@
 using CitizenGateway.Api.Auth;
-using CitizenGateway.Application.Abstractions;
+using CitizenGateway.Application.Features.Audit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 

@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -25,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CitizenGateway.Application\CitizenGateway.Application.csproj" />
+    <ProjectReference Include="..\..\src\CitizenGateway.Contracts\CitizenGateway.Contracts.csproj" />
     <ProjectReference Include="..\..\src\CitizenGateway.Domain\CitizenGateway.Domain.csproj" />
   </ItemGroup>
 

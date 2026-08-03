@@ -21,7 +21,8 @@ public sealed class AuthAndCitizenEndpointsTests
 
         using var response = await client.PostAsJsonAsync("/api/auth/login", new
         {
-            username = DbSeeder.PersonelUsername,
+            portal = "Personel",
+            identifier = DbSeeder.PersonelEmail,
             password = DbSeeder.PersonelPassword
         });
 
@@ -30,6 +31,7 @@ public sealed class AuthAndCitizenEndpointsTests
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         json.GetProperty("accessToken").GetString().Should().NotBeNullOrWhiteSpace();
         json.GetProperty("role").GetString().Should().Be("Personel");
+        json.GetProperty("displayName").GetString().Should().Be(DbSeeder.PersonelDisplayName);
     }
 
     [Fact]
@@ -37,7 +39,7 @@ public sealed class AuthAndCitizenEndpointsTests
     {
         using var client = _fixture.Factory.CreateClient();
 
-        using var response = await client.GetAsync($"/api/citizen/{_fixture.VatandasTcNo}/summary");
+        using var response = await client.GetAsync($"/api/citizens/{_fixture.VatandasTcNo}/summary");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -49,7 +51,7 @@ public sealed class AuthAndCitizenEndpointsTests
         var token = await AuthTestHelper.LoginAsPersonelAsync(client);
         AuthTestHelper.UseBearer(client, token);
 
-        using var response = await client.GetAsync($"/api/citizen/{_fixture.VatandasTcNo}/summary");
+        using var response = await client.GetAsync($"/api/citizens/{_fixture.VatandasTcNo}/summary");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -70,7 +72,7 @@ public sealed class AuthAndCitizenEndpointsTests
         var token = await AuthTestHelper.LoginAsVatandasAsync(client);
         AuthTestHelper.UseBearer(client, token);
 
-        using var response = await client.GetAsync($"/api/citizen/{_fixture.OtherTcNo}/summary");
+        using var response = await client.GetAsync($"/api/citizens/{_fixture.OtherTcNo}/summary");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

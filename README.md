@@ -59,11 +59,14 @@ flowchart LR
 | Katman | Proje | Sorumluluk |
 |--------|--------|------------|
 | Domain | `CitizenGateway.Domain` | Entity, enum, value object, domain hataları |
-| Application | `CitizenGateway.Application` | Use case’ler, DTO’lar, kontratlar |
+| Contracts | `CitizenGateway.Contracts` | API/WebUI paylaşılan wire DTO’ları |
+| Application | `CitizenGateway.Application` | Feature use-case’ler (`Features/*`), port’lar |
 | Infrastructure | `CitizenGateway.Infrastructure` | EF Core, seed, HttpClient + Polly |
 | Api | `CitizenGateway.Api` | Controllers, JWT, middleware/filter |
-| Presentation | `CitizenGateway.WebUI` | Minimal Razor Pages UI |
+| Presentation | `CitizenGateway.WebUI` | Razor Pages UI (Contracts tüketir) |
 | Mocks | `MockServices/*` | Departman simülasyonları |
+
+Solution Explorer: `src` · `src/MockServices` · `tests`. Ortak derleme: kök `Directory.Build.props`.
 
 ---
 
@@ -99,7 +102,7 @@ docker compose up --build
 | WebUI | http://localhost:5104 |
 | PostgreSQL | localhost:5433 (`postgres` / `postgres`) |
 
-**WebUI akışı:** Login → vatandaş seç (Personel) veya kendi TC (Vatandaş) → Sorgula → 3 servis kartı + talep oluştur/listele → Personel için Audit sayfası.
+**WebUI akışı (anlatı):** Portal seç (Personel / Vatandaş) → kurumsal e-posta veya T.C. ile oturum → vatandaş seç/sorgula → Spor + Kütüphane + Çözüm Merkezi birleşik özeti → talep oluştur → Personel için erişim kayıtları. Demo kahramanı: **Ayşe Demir**. İsimleri görmek için ilk kurulumda veya veri değişince `docker compose down -v` ile volume sıfırlayın.
 
 Durdurmak için: `docker compose down`
 
@@ -126,10 +129,10 @@ dotnet run --project src/CitizenGateway.WebUI --launch-profile http
 
 ### Demo kullanıcılar (seed)
 
-| Kullanıcı | Şifre | Rol | Not |
-|-----------|-------|-----|-----|
-| `personel` | `Personel123!` | Personel | Tüm TC’lere erişir |
-| `vatandas` | `Vatandas123!` | Vatandas | Yalnızca kendi TC’si (`71151275166`) |
+| Portal | Kimlik | Şifre | Not |
+|--------|--------|-------|-----|
+| Personel | `aylin.kara@ornekkoy.bel.tr` | `Personel123!` | Kurumsal e-posta · tüm TC’lere erişir |
+| Vatandaş | `71151275166` | `Vatandas123!` | Ayşe Demir · yalnızca kendi TC’si |
 
 Örnek sorgu TC: `71151275166`
 
@@ -141,9 +144,12 @@ dotnet run --project src/CitizenGateway.WebUI --launch-profile http
 |--------|----------|----------|-------|
 | POST | `/api/auth/login` | JWT üretir | Herkese açık |
 | GET | `/api/citizens` | Seed vatandaş listesi (UI seçici) | Sadece Personel |
-| GET | `/api/citizen/{tcNo}/summary` | 3 mock servise paralel istek; konsolide özet (`PartialFailure` destekli) | Personel: herkes · Vatandaş: kendi TC |
-| POST | `/api/citizen/{tcNo}/requests` | Yeni talep oluşturur, mock’a iletir, DB’ye yazar | Personel + Vatandaş (kendi adına) |
-| GET | `/api/citizen/{tcNo}/requests` | Geçmiş talepleri listeler | Personel: herkes · Vatandaş: kendi TC |
+| GET | `/api/citizens/{tcNo}/summary` | 3 mock servise paralel istek; konsolide özet (`PartialFailure` destekli) | Personel: herkes · Vatandaş: kendi TC |
+| POST | `/api/citizens/{tcNo}/requests` | Yeni talep oluşturur (Beklemede), mock’a iletir | Personel + Vatandaş (kendi adına) |
+| GET | `/api/citizens/{tcNo}/requests` | Geçmiş talepleri listeler | Personel: herkes · Vatandaş: kendi TC |
+| GET | `/api/service-requests` | Talep kutusu (`?status=Beklemede`) | Sadece Personel |
+| POST | `/api/service-requests/{id}/approve` | Talebi onayla | Sadece Personel |
+| POST | `/api/service-requests/{id}/reject` | Talebi reddet | Sadece Personel |
 | GET | `/api/audit-logs` | Audit kayıtları | Sadece Personel |
 | GET | `/health` | Gateway + DB + mock servis durumu | Herkese açık |
 

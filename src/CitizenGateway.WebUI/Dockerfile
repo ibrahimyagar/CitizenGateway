@@ -1,9 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+COPY Directory.Build.props ./
+COPY src/CitizenGateway.Domain/CitizenGateway.Domain.csproj src/CitizenGateway.Domain/
+COPY src/CitizenGateway.Contracts/CitizenGateway.Contracts.csproj src/CitizenGateway.Contracts/
 COPY src/CitizenGateway.WebUI/CitizenGateway.WebUI.csproj src/CitizenGateway.WebUI/
 RUN dotnet restore src/CitizenGateway.WebUI/CitizenGateway.WebUI.csproj
 
+COPY src/CitizenGateway.Domain/ src/CitizenGateway.Domain/
+COPY src/CitizenGateway.Contracts/ src/CitizenGateway.Contracts/
 COPY src/CitizenGateway.WebUI/ src/CitizenGateway.WebUI/
 RUN dotnet publish src/CitizenGateway.WebUI/CitizenGateway.WebUI.csproj -c Release -o /app/publish --no-restore
 
